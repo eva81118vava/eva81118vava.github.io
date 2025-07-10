@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Teachable Machine Hand Gesture Recognition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 300;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #startBtn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        }
+
+        #startBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+        }
+
+        #stopBtn {
+            background: linear-gradient(135deg, #f44336, #da190b);
+            color: white;
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.4);
+        }
+
+        #stopBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(244, 67, 54, 0.6);
+        }
+
+        #stopBtn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .webcam-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        #webcam-container {
+            display: inline-block;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 4px solid rgba(255, 255, 255, 0.8);
+        }
+
+        #webcam-container canvas {
+            display: block;
+            width: 400px !important;
+            height: 400px !important;
+        }
+
+        .predictions-section {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .predictions-title {
+            text-align: center;
+            font-size: 1.8em;
+            color: #4a5568;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+
+        .prediction-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            transition: all 0.3s ease;
+        }
+
+        .prediction-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .prediction-label {
+            font-weight: 600;
+            min-width: 120px;
+            font-size: 16px;
+            color: #2d3748;
+        }
+
+        .prediction-bar-container {
+            flex: 1;
+            height: 25px;
+            background: #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 0 15px;
+            position: relative;
+        }
+
+        .prediction-bar {
+            height: 100%;
+            border-radius: 12px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .prediction-bar.highest {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+
+        .prediction-bar.second {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+        }
+
+        .prediction-bar.other {
+            background: linear-gradient(90deg, #6b7280, #4b5563);
+        }
+
+        .prediction-percentage {
+            font-weight: 700;
+            font-size: 16px;
+            color: #1a202c;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            color: #4a5568;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-webcam {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #e53e3e;
+            font-size: 18px;
+        }
+
+        .no-webcam.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI Hand Gesture Recognition</h1>
+        
+        <div class="controls">
+            <button id="startBtn" onclick="init()">🎥 Start Camera</button>
+            <button id="stopBtn" onclick="stopCamera()" disabled>⏹️ Stop Camera</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>Loading AI Model...</div>
+        </div>
+
+        <div class="webcam-section">
+            <div id="webcam-container"></div>
+            <div class="no-webcam" id="no-webcam">
+                <p>❌ Camera not available or access denied</p>
+            </div>
+        </div>
+
+        <div class="predictions-section">
+            <h2 class="predictions-title">🎯 Detection Results</h2>
+            <div id="label-container"></div>
+            <div class="status" id="status">Click "Start Camera" to begin recognition</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <script type="text/javascript">
+        const URL = "https://teachablemachine.withgoogle.com/models/CvY-NJh_V/";
+        let model, webcam, labelContainer, maxPredictions;
+        let isRunning = false;
+
+        async function init() {
+            if (isRunning) return;
+            
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const loading = document.getElementById('loading');
+            const status = document.getElementById('status');
+            const noWebcam = document.getElementById('no-webcam');
+            
+            startBtn.disabled = true;
+            loading.classList.add('show');
+            status.textContent = 'Loading AI model...';
+            noWebcam.classList.remove('show');
+
+            try {
+                const modelURL = URL + "model.json";
+                const metadataURL = URL + "metadata.json";
+
+                model = await tmImage.load(modelURL, metadataURL);
+                maxPredictions = model.getTotalClasses();
+
+                const flip = true;
+                webcam = new tmImage.Webcam(400, 400, flip);
+                await webcam.setup();
+                await webcam.play();
+                
+                isRunning = true;
+                window.requestAnimationFrame(loop);
+
+                document.getElementById("webcam-container").appendChild(webcam.canvas);
+                labelContainer = document.getElementById("label-container");
+                labelContainer.innerHTML = '';
+                
+                for (let i = 0; i < maxPredictions; i++) {
+                    const div = document.createElement("div");
+                    div.className = "prediction-item";
+                    div.innerHTML = `
+                        <div class="prediction-label">Class ${i + 1}</div>
+                        <div class="prediction-bar-container">
+                            <div class="prediction-bar" id="bar-${i}"></div>
+                        </div>
+                        <div class="prediction-percentage" id="percentage-${i}">0%</div>
+                    `;
+                    labelContainer.appendChild(div);
+                }
+
+                startBtn.disabled = false;
+                stopBtn.disabled = false;
+                loading.classList.remove('show');
+                status.textContent = 'Recognition active - Show your hand gestures!';
+
+            } catch (error) {
+                console.error('Error initializing:', error);
+                startBtn.disabled = false;
+                loading.classList.remove('show');
+                noWebcam.classList.add('show');
+                status.textContent = 'Failed to initialize camera or model';
+            }
+        }
+
+        async function loop() {
+            if (!isRunning) return;
+            
+            webcam.update();
+            await predict();
+            window.requestAnimationFrame(loop);
+        }
+
+        async function predict() {
+            if (!model || !webcam) return;
+
+            const prediction = await model.predict(webcam.canvas);
+            
+            // Sort predictions by probability to determine ranking
+            const sortedPredictions = prediction
+                .map((pred, index) => ({ ...pred, originalIndex: index }))
+                .sort((a, b) => b.probability - a.probability);
+
+            for (let i = 0; i < maxPredictions; i++) {
+                const pred = prediction[i];
+                const percentage = (pred.probability * 100).toFixed(1);
+                const barElement = document.getElementById(`bar-${i}`);
+                const percentageElement = document.getElementById(`percentage-${i}`);
+                
+                if (barElement && percentageElement) {
+                    // Update label with class name
+                    const labelElement = barElement.parentElement.parentElement.querySelector('.prediction-label');
+                    if (labelElement) {
+                        labelElement.textContent = pred.className;
+                    }
+                    
+                    // Update bar width
+                    barElement.style.width = percentage + '%';
+                    
+                    // Update percentage text
+                    percentageElement.textContent = percentage + '%';
+                    
+                    // Determine bar color based on ranking
+                    barElement.className = 'prediction-bar';
+                    if (i === sortedPredictions[0].originalIndex) {
+                        barElement.classList.add('highest');
+                    } else if (i === sortedPredictions[1].originalIndex) {
+                        barElement.classList.add('second');
+                    } else {
+                        barElement.classList.add('other');
+                    }
+                }
+            }
+        }
+
+        function stopCamera() {
+            if (!isRunning) return;
+            
+            isRunning = false;
+            
+            if (webcam) {
+                webcam.stop();
+                const webcamContainer = document.getElementById("webcam-container");
+                webcamContainer.innerHTML = '';
+            }
+            
+            const startBtn = document.getElementById('startBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const status = document.getElementById('status');
+            
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            status.textContent = 'Camera stopped. Click "Start Camera" to begin again.';
+        }
+    </script>
+</body>
+</html>
